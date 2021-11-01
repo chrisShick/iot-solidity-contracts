@@ -52,16 +52,22 @@ contract Domain {
         _;
     }
     
+    event DomainDeactived(address indexed _domain);
+    event DeviceAdded(address indexed _domain, address indexed _device);
+
     /**
      * Deactive domain to make it in elgible for verification purposes
      **/
     function deactive() public onlyBy(owner) onlyActive {
         currentState = State.INACTIVE;
+        emit DomainDeactived(address(this));
     }
     
     function addDevice(bytes32 nonce) public onlyBy(owner) onlyActive {
         Device d = new Device(this, index, nonce);
         devices[index] = d;
         index++;
+        
+        emit DeviceAdded(address(this), address(d));
     }
 }

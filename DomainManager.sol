@@ -38,6 +38,8 @@ contract DomainManager {
         _;
     }
     
+    event DomainRegistered(address indexed _from, address indexed _domain);
+
     /**
      * Allow only the set owner to add domains
      **/
@@ -45,13 +47,15 @@ contract DomainManager {
         Domain d = new Domain(this, _domainKey);
         
         domains[_domainKey] = d;
+        
+        emit DomainRegistered(address(this), address(d));
     }
     
     /**
      * Get a domain by address
      * 
      **/
-    function getDomain(address _domainKey) public view returns(Domain) {
-        return domains[_domainKey];
+    function getDomain(address _domainKey) public view returns(address) {
+        return address(domains[_domainKey]);
     }
 }

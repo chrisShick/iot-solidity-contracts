@@ -6,6 +6,8 @@ contract Iot {
     // Mapping between accounts and a DomainManager address
     mapping(address => DomainManager) private domain_manager;
     
+    event AccountRegistered(address indexed _from, address indexed _domainManager);
+
     /**
      * This function allows an account to register a domain under there account address. 
      * 
@@ -16,5 +18,7 @@ contract Iot {
     function registerDomain() public {
         DomainManager ds = new DomainManager(this, msg.sender);
         domain_manager[msg.sender] = ds;
+        
+        emit AccountRegistered(msg.sender, address(ds));
     }
 }

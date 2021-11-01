@@ -21,11 +21,15 @@ contract Device {
         hash = _hash;
     }
     
+    event DeviceRegistered(address indexed _device, address indexed _account);
+
     /**
      * Register the public key address by verifying the signature generated
      * offchain.
      **/
     function register(address _publicKey, bytes memory _signature) public {
         // TODO: VALIDATE SIGNATURE AND ASSIGN TO publicKey variable
+        
+        emit DeviceRegistered(address(this), address(owner));
     }
 }
