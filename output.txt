@@ -1,1 +1,0 @@
-Action 			 Time 			 Gas UsedDeployed 	 0.12021780014038086	 tx_receipt['gasUsed']Register Domain Manager 	 0.147996187210083 	 1211930Register Domain 	 0.10724782943725586 	 824642Add Device 	 0.14040112495422363 	 286693
