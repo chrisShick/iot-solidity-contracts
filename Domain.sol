@@ -1,4 +1,5 @@
 pragma solidity >=0.7.0 <0.9.0;
+// SPDX-License-Identifier: MIT
 
 import "./DomainManager.sol";
 import "./Device.sol";
@@ -6,30 +7,30 @@ import "./Device.sol";
 contract Domain {
     // States of the domain
     enum State{ ACTIVE, INACTIVE }
-    
+
     // Reference to the owner of the DomainManager
     address private owner;
 
     // Reference to the address of the parentContract
     DomainManager private parentContract;
-    
+
     // Current state of the domain
     State private currentState;
 
     // Mapping of devices
     mapping(uint256 => Device) private devices;
     uint256 index;
-    
+
     constructor(DomainManager _parentContract, address _publicKey) {
         parentContract = _parentContract;
         owner = _publicKey;
         currentState = State.ACTIVE;
     }
-    
+
     /**
     * Modifier to ensure that only a particular address can
     * call the particular the modifier is attached to.
-    * 
+    *
     **/
     modifier onlyBy(address _account) {
         require(
@@ -38,11 +39,11 @@ contract Domain {
         );
         _;
     }
-    
+
     /**
     * Modifier to ensure that only a particular address can
     * call the particular the modifier is attached to.
-    * 
+    *
     **/
     modifier onlyActive() {
         require(
@@ -51,23 +52,39 @@ contract Domain {
         );
         _;
     }
-    
+
     event DomainDeactived(address indexed _domain);
     event DeviceAdded(address indexed _domain, address indexed _device);
 
     /**
-     * Deactive domain to make it in elgible for verification purposes
+     * Deactive domain to make it inelgible for verification purposes
      **/
     function deactive() public onlyBy(owner) onlyActive {
         currentState = State.INACTIVE;
         emit DomainDeactived(address(this));
     }
-    
-    function addDevice(bytes32 nonce) public onlyBy(owner) onlyActive {
-        Device d = new Device(this, index, nonce);
+
+    /**
+     * Deactive domain to make it in elgible for verification purposes
+     **/
+    function parentDeactive() public onlyBy(address(parentContract)) onlyActive {
+        currentState = State.INACTIVE;
+        emit DomainDeactived(address(this));
+    }
+
+    function addDevice() public onlyBy(owner) onlyActive {
+        Device d = new Device(this, index);
         devices[index] = d;
         index++;
-        
+
         emit DeviceAdded(address(this), address(d));
+    }
+
+    function getOwner() public view returns(address) {
+        return owner;
+    }
+
+    function getState() public view returns(State) {
+        return currentState;
     }
 }
