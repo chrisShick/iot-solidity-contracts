@@ -4,9 +4,9 @@ import os
 from web3 import Web3
 import time
 
-def registerDomainManager(contract, file):
+def registerDomainManager(contract, fromAccount, file):
     start = time.time()
-    register_domain = contract.functions.registerDomain().transact()
+    register_domain = contract.functions.registerDomain().transact({'from': fromAccount})
     # get the receipt of the transaction
     register_domain_tx_receipt = web3.eth.waitForTransactionReceipt(register_domain)
     end = time.time()
@@ -16,18 +16,18 @@ def registerDomainManager(contract, file):
     print("Register Domain Manager \t " + str(t) + " \t " + str(register_domain_tx_receipt['gasUsed']))
     file.writelines(txt)
 
-def getDomainManager(contract):
+def getDomainManager(contract, fromAccount):
     start = time.time()
-    get_domain_manager = contract.functions.getDomainManager().call()
+    get_domain_manager = contract.functions.getDomainManager().call({'from': fromAccount})
     # get the receipt of the transaction
     end = time.time()
     t = end - start
     print('Get Domain Manager', '\t', t)
     return get_domain_manager
 
-def registerDomain(contract, account, file):
+def registerDomain(contract, domainAccount, fromAccount, file):
     start = time.time()
-    register_domain = contract.functions.registerDomain(account).transact()
+    register_domain = contract.functions.registerDomain(domainAccount).transact({'from': fromAccount})
     # get the receipt of the transaction
     register_domain_tx_receipt = web3.eth.waitForTransactionReceipt(register_domain)
     end = time.time()
@@ -37,18 +37,18 @@ def registerDomain(contract, account, file):
     file.writelines(txt)
     print("Register Domain \t " + str(t) + " \t " + str(register_domain_tx_receipt['gasUsed']))
 
-def getDomain(contract, account):
+def getDomain(contract, domainAccount, fromAccount):
     start = time.time()
-    get_domain = contract.functions.getDomain(account).call()
+    get_domain = contract.functions.getDomain(domainAccount).call({'from': fromAccount})
     # get the receipt of the transaction
     end = time.time()
     t = end - start
     print('Get Domain', '\t', t)
     return get_domain
 
-def addDevice(contract, account, file):
+def addDevice(contract, fromAccount, file):
     start = time.time()
-    add_device = contract.functions.addDevice().transact({'from': account})
+    add_device = contract.functions.addDevice().transact({'from': fromAccount})
     # get the receipt of the transaction
     add_device_tx_receipt = web3.eth.waitForTransactionReceipt(add_device)
     end = time.time()
@@ -59,7 +59,7 @@ def addDevice(contract, account, file):
     print("Add Device \t " + str(t) + " \t " + str(add_device_tx_receipt['gasUsed']))
 
 # Create the ganache connection
-ganache_url = "http://127.0.0.1:7545"
+ganache_url = "http://127.0.0.1:8545"
 web3 = Web3(Web3.HTTPProvider(ganache_url))
 # # provide default account from which to run transactions
 web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -81,11 +81,11 @@ tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
 end = time.time()
 t = end - start
 
-header = "Action, Time, Gas Used \n"
+header = "Account, Action, Time, Gas Used \n"
 f1.writelines(header)
 print(header)
 print("Deployed \t" + str(t) + "\t" + str(tx_receipt['gasUsed']))
-f1.writelines("Deployed," + str(t) + "," + str(tx_receipt['gasUsed']) + "\n")
+f1.writelines(str(web3.eth.accounts[0]) + ",Deployed," + str(t) + "," + str(tx_receipt['gasUsed']) + "\n")
 
 
 contract = web3.eth.contract(
@@ -93,22 +93,56 @@ contract = web3.eth.contract(
     abi=main_abi
 )
 
-registerDomainManager(contract, f1)
-domainManagerAddress = getDomainManager(contract)
-domainManagerContract = web3.eth.contract(
-    address=domainManagerAddress,
-    abi=domain_manager_abi
-)
+maxDomainManagers = 3
+maxDomains = 6
+maxDevices = 13
+i = 1
+currentPointer = 0
+while (i <= maxDomainManagers):
+    j = 1
+    dmAccAddress = web3.eth.accounts[currentPointer]
+    registerDomainManager(
+        contract=contract,
+        fromAccount=dmAccAddress,
+        file=f1
+    )
+    domainManagerAddress = getDomainManager(
+        contract=contract,
+        fromAccount=dmAccAddress
+    )
+    domainManagerContract = web3.eth.contract(
+        address=domainManagerAddress,
+        abi=domain_manager_abi
+    )
+    i += 1
+    currentPointer += 1
+    while (j <= maxDomains):
+        x = 1
+        dAccAddress = web3.eth.accounts[currentPointer]
+        registerDomain(
+            contract=domainManagerContract,
+            fromAccount=dmAccAddress,
+            domainAccount=dAccAddress,
+            file=f1
+        )
+        domainAddress = getDomain(
+            contract=domainManagerContract,
+            fromAccount=dmAccAddress,
+            domainAccount=dAccAddress
+        )
+        domainContract = web3.eth.contract(
+            address=domainAddress,
+            abi=domain_abi
+        )
+        j += 1
+        currentPointer += 1
+        while (x <= maxDevices):
+            addDevice(
+                contract=domainContract,
+                fromAccount=dAccAddress,
+                file=f1
+            )
+            x += 1
+            currentPointer += 1
 
-registerDomain(domainManagerContract, web3.eth.accounts[1], f1)
-domainAddress = getDomain(domainManagerContract, web3.eth.accounts[1])
-
-domainContract = web3.eth.contract(
-    address=domainAddress,
-    abi=domain_abi
-)
-addDevice(domainContract, web3.eth.accounts[1], f1)
-
-
-
-
+f1.close()
